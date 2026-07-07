@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # --- INFRAESTRUTURA: BROKER DE MENSAGERIA ---
+  rabbitmq-service:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-container
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBIT_MQ_DEFAULT_USER: "guest"
+      RABBIT_MQ_DEFAULT_PASS: "guest"
+
+  # --- MICROSSERVIÇO DE USUÁRIOS ---
+  users-api:
+    image: fcg-users-api:v1 # Ajustado para v1 para casar com o K8s
+    container_name: users-api-container
+    build:
+      context: .
+      dockerfile: FCG.UsersAPI/Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=rabbitmq-service
+    depends_on:
+      - rabbitmq-service
+
+  # --- MICROSSERVIÇO DE CATÁLOGO (JOGOS) ---
+  catalog-api:
+    image: fcg-catalog-api:v1 
+    container_name: catalog-api-container
+    build:
+      context: .
+      dockerfile: FCG.CatalogAPI/Dockerfile
+    ports:
+      - "8082:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=rabbitmq-service
+    depends_on:
+      - rabbitmq-service
+
+  # --- MICROSSERVIÇO DE PAGAMENTOS ---
+  payments-api:
+    image: fcg-payments-api:latest
+    container_name: payments-api-container
+    build:
+      context: .
+      dockerfile: FCG.PaymentsAPI/Dockerfile
+    ports:
+      - "8083:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=rabbitmq-service
+    depends_on:
+      - rabbitmq-service
+
+  # --- MICROSSERVIÇO DE NOTIFICAÇÕES ---
+  notifications-api:
+    image: fcg-notifications-api:latest
+    container_name: notifications-api-container
+    build:
+      context: .
+      dockerfile: FCG.NotificationsAPI/Dockerfile
+    ports:
+      - "8084:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=rabbitmq-service
+    depends_on:
+      - rabbitmq-service

@@ -1,0 +1,23 @@
+[
+  {
+    "Name": "Novo Perfil",
+    "Projects": [
+      {
+        "Path": "FCG.UsersAPI\\FCG.UsersAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "FCG.CatalogAPI\\FCG.CatalogAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "FCG.NotificationsAPI\\FCG.NotificationsAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "FCG.PaymentsAPI\\FCG.PaymentsAPI.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

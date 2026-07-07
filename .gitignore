@@ -1,0 +1,14 @@
+# === Filtros do Tech Challenge ===
+# Ignorar estritamente o código de todas as 4 APIs neste repositório de infra
+FCG.CatalogAPI/
+FCG.PaymentsAPI/
+FCG.NotificationsAPI/
+FCG.UsersAPI/
+
+# === Filtros Padrão do .NET ===
+# Ignorar pastas de build e binários da raiz/testes
+[Dd]ebug/
+[Rr]elease/
+**/bin/
+**/obj/
+.vs/
