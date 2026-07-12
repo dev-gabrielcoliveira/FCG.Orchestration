@@ -1,7 +1,21 @@
 version: '3.8'
 
 services:
-  # --- INFRAESTRUTURA: BROKER DE MENSAGERIA ---
+
+  # --- BANCO DE DADOS ---
+  sqlserver-service:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-container
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "NovaSenha123!"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+
+  # --- BROKER DE MENSAGERIA ---
   rabbitmq-service:
     image: rabbitmq:3-management
     container_name: rabbitmq-container
@@ -9,12 +23,13 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBIT_MQ_DEFAULT_USER: "guest"
-      RABBIT_MQ_DEFAULT_PASS: "guest"
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+
 
   # --- MICROSSERVIÇO DE USUÁRIOS ---
   users-api:
-    image: fcg-users-api:v1 # Ajustado para v1 para casar com o K8s
+    image: fcg-users-api:v1
     container_name: users-api-container
     build:
       context: .
@@ -22,14 +37,17 @@ services:
     ports:
       - "8081:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - RABBITMQ_HOST=rabbitmq-service
+      ASPNETCORE_ENVIRONMENT: Production
+      RabbitMq__Host: rabbitmq-service
+      ConnectionStrings__UsuariosConnection: "Server=sqlserver-service;Database=Db_Usuarios;User Id=sa;Password=NovaSenha123!;TrustServerCertificate=True;"
     depends_on:
       - rabbitmq-service
+      - sqlserver-service
 
-  # --- MICROSSERVIÇO DE CATÁLOGO (JOGOS) ---
+
+  # --- MICROSSERVIÇO DE CATÁLOGO ---
   catalog-api:
-    image: fcg-catalog-api:v1 
+    image: fcg-catalog-api:v1
     container_name: catalog-api-container
     build:
       context: .
@@ -37,14 +55,17 @@ services:
     ports:
       - "8082:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - RABBITMQ_HOST=rabbitmq-service
+      ASPNETCORE_ENVIRONMENT: Production
+      RabbitMq__Host: rabbitmq-service
+      ConnectionStrings__CatalogConnection: "Server=sqlserver-service;Database=Db_Jogos;User Id=sa;Password=NovaSenha123!;TrustServerCertificate=True;"
     depends_on:
       - rabbitmq-service
+      - sqlserver-service
+
 
   # --- MICROSSERVIÇO DE PAGAMENTOS ---
   payments-api:
-    image: fcg-payments-api:latest
+    image: fcg-payments-api:v1
     container_name: payments-api-container
     build:
       context: .
@@ -52,14 +73,15 @@ services:
     ports:
       - "8083:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - RABBITMQ_HOST=rabbitmq-service
+      ASPNETCORE_ENVIRONMENT: Production
+      RabbitMq__Host: rabbitmq-service
     depends_on:
       - rabbitmq-service
 
+
   # --- MICROSSERVIÇO DE NOTIFICAÇÕES ---
   notifications-api:
-    image: fcg-notifications-api:latest
+    image: fcg-notifications-api:v1
     container_name: notifications-api-container
     build:
       context: .
@@ -67,7 +89,11 @@ services:
     ports:
       - "8084:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - RABBITMQ_HOST=rabbitmq-service
+      ASPNETCORE_ENVIRONMENT: Production
+      RabbitMq__Host: rabbitmq-service
     depends_on:
       - rabbitmq-service
+
+
+volumes:
+  sqlserver-data:
