@@ -95,5 +95,27 @@ services:
       - rabbitmq-service
 
 
+  # --- API GATEWAY ---
+  kong:
+    image: kong:3.9.0
+    container_name: kong-container
+    environment:
+      # A configuração fica no kong.yml e não em um banco PostgreSQL
+      KONG_DATABASE: "off"
+      # Arquivo para configurar serviços e rotas no Kong
+      KONG_DECLARATIVE_CONFIG: "/kong/declarative/kong.yml"
+      # Envia logs para o Docker, facilitando a visualização com docker logs.
+      KONG_PROXY_ACCESS_LOG: "/dev/stdout"
+      KONG_ADMIN_ACCESS_LOG: "/dev/stdout"
+      KONG_PROXY_ERROR_LOG: "/dev/stderr"
+      KONG_ADMIN_ERROR_LOG: "/dev/stderr"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+    ports:
+      - "8000:8000" # Porta de entrada do Kong
+      - "8001:8001" # Admin API do Kong
+    volumes:
+      # Disponibiliza o arquivo do host dentro do container como somente leitura
+      - ./k8s/kong/kong.yml:/kong/declarative/kong.yml:ro
+
 volumes:
   sqlserver-data:
