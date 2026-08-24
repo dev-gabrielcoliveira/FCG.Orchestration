@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-deployment
+  namespace: default
+  labels:
+    app: kong
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      initContainers:
+      - name: render-config
+        image: dibi/envsubst:latest
+        command: ['sh', '-c', 'envsubst < /config-template/kong.yml.template > /rendered-config/kong.yml']
+        env:
+        - name: JWT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: kong-jwt-secret
+              key: JWT_KEY
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: kong-jwt-secret
+              key: JWT_SECRET
+        volumeMounts:
+        - name: config-template-volume
+          mountPath: /config-template
+        - name: rendered-config-volume
+          mountPath: /rendered-config
+      containers:
+      - name: kong
+        image: kong:3.9.0
+        env:
+        - name: KONG_DATABASE
+          value: "off"
+        - name: KONG_DECLARATIVE_CONFIG
+          value: /usr/local/kong/declarative/kong.yml
+        - name: KONG_PROXY_LISTEN
+          value: 0.0.0.0:8000
+        - name: KONG_ADMIN_LISTEN
+          value: 0.0.0.0:8001
+        ports:
+        - name: proxy
+          containerPort: 8000
+        - name: admin
+          containerPort: 8001
+        volumeMounts:
+        - name: rendered-config-volume
+          mountPath: /usr/local/kong/declarative
+      volumes:
+      - name: config-template-volume
+        configMap:
+          name: kong-declarative-config
+      - name: rendered-config-volume
+        emptyDir: {}
