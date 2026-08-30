@@ -1,0 +1,74 @@
+# ConfigMap que armazena as regras de raspagem (scrape) do Prometheus
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: default
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s # Intervalo de coleta de métricas (a cada 5 segundos)
+    scrape_configs:
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod # Descoberta automática de Pods no cluster K8s
+        relabel_configs:
+          # Filtra apenas pods que possuem a anotação prometheus.io/scrape: "true"
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          # Mapeia o caminho da métrica (ex: /metrics)
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          # Mapeia a porta onde a API expõe as métricas
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            target_label: __address__
+            replacement: $1:$2
+---
+# Deployment do servidor Prometheus
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.45.0
+        args:
+          - "--config.file=/etc/prometheus/prometheus.yml" # Aponta para o arquivo montado pelo ConfigMap
+        ports:
+          - containerPort: 9090 # Porta padrão do servidor Prometheus
+        volumeMounts:
+          - name: config-volume
+            mountPath: /etc/prometheus # Injeta o ConfigMap no container
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-config
+---
+# Service para expor o Prometheus internamente no cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: default
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - port: 9090
+    targetPort: 9090
