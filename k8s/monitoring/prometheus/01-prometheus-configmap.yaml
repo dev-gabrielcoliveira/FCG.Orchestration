@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: default
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'users-api'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['users-service:80']
+
+      - job_name: 'catalog-api'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['catalog-service:80']
+
+      - job_name: 'payments-api'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['payments-service:80']
+
+      - job_name: 'notifications-api'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['notifications-service:80']

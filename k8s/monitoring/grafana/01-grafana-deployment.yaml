@@ -1,4 +1,3 @@
-# Deployment do Grafana (Painel Visual da Observabilidade)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,16 +21,3 @@ spec:
         env:
         - name: GF_SECURITY_ADMIN_PASSWORD
           value: "admin" # Senha padrão inicial de acesso ao dashboard
----
-# Service interno para acessar a interface do Grafana
-apiVersion: v1
-kind: Service
-metadata:
-  name: grafana-service
-  namespace: default
-spec:
-  selector:
-    app: grafana
-  ports:
-  - port: 3000
-    targetPort: 3000
