@@ -17,7 +17,14 @@ spec:
       - name: grafana
         image: grafana/grafana:10.0.0
         ports:
-        - containerPort: 3000 # Porta interna da interface web do Grafana
+        - containerPort: 3000
         env:
         - name: GF_SECURITY_ADMIN_PASSWORD
-          value: "admin" # Senha padrão inicial de acesso ao dashboard
+          value: "admin"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
