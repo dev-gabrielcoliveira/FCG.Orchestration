@@ -1,91 +1,70 @@
-# FCG.Orchestration
+# OrchestratorAPI
 
-Repositório responsável pela orquestração da plataforma FIAP Cloud Games (FCG).
+> Microsserviço responsável pela orquestração de transações distribuídas (Saga Pattern), gestão de estados e coordenação do fluxo de pedidos da plataforma FIAP Cloud Games (FCG).
 
-Este projeto concentra os arquivos de infraestrutura necessários para executar os microsserviços em ambiente local utilizando Docker Compose e realizar a implantação em Kubernetes.
+---
 
-## Sobre a solução
+## 💡 Sobre o projeto
 
-A plataforma FIAP Cloud Games foi evoluída de uma arquitetura monolítica para uma arquitetura baseada em microsserviços orientada a eventos.
+O **OrchestratorAPI** é o componente central responsável por coordenar as transações distribuídas entre os microsserviços da plataforma. 
 
-A solução é composta por quatro serviços independentes:
+Iniciando as requisições a partir do **Kong API Gateway**, o orquestrador utiliza o padrão **Saga State Machine** para garantir a **consistência eventual** do ecossistema, gerenciando o ciclo de vida dos pedidos desde o checkout até a confirmação de pagamento e emissão de notificações, aplicando transações de compensação (estornos) em caso de falha.
 
-- UsersAPI
-- CatalogAPI
-- PaymentsAPI
-- NotificationsAPI
+---
 
-Cada microsserviço possui seu próprio ciclo de vida, container e configuração independente.
+## 🎯 Responsabilidades
 
-## Arquitetura da solução
+- **Orquestração de Sagas:** Controle de fluxo e transição de estados (`Submitted`, `PaymentPending`, `Completed`, `Failed`).
+- **Roteamento e Controle de Entrada:** Recebimento das requisições filtradas e roteadas pelo **Kong API Gateway**.
+- **Gestão de Cache:** Utilização do **Redis** para armazenamento temporário e consulta rápida do estado das Sagas.
+- **Histórico e Auditoria:** Armazenamento documental detalhado das execuções no **MongoDB**.
+- **Consistência Eventual & Compensação:** Cancelamento ou rollback de etapas em caso de recusa financeira ou falha de sistema.
 
-Visão geral:
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+- **.NET 8** (ASP.NET Core Web API / Worker Service)
+- **Kong API Gateway** (Porta de entrada e roteamento de requisições)
+- **Redis** (Cache distribuído de alta velocidade)
+- **MongoDB** (Banco documental para auditoria e log de Sagas)
+- **SQL Server** (Persistência relacional do estado das Sagas)
+- **MassTransit** & **RabbitMQ** (Mensageria e eventos de domínio)
+- **Azure Storage Queues & Azure Functions** (Fila e consumidor local de notificações via Azurite)
+- **Docker & Kubernetes**
+- **Serilog, Prometheus & Grafana** (Observabilidade)
+
+---
+
+## 🏗️ Arquitetura e Fluxo Integrado
+
+O diagrama abaixo ilustra a integração da arquitetura desde a borda até o processamento das notificações:
 
 ```text
-                    +----------------+
-                    |   UsersAPI     |
-                    +----------------+
-                            |
-                            | UserCreatedEvent
-                            ↓
+                   [ Cliente / Web / Mobile ]
+                              |
+                              ↓
+                    [ Kong API Gateway ]
+                              |
+                              ↓
+                     [ OrchestratorAPI ] <---- (Cache de Estado) ----> [ Redis ]
+                            /   \
+  (Persistência Estado)    /     \   (Log de Auditoria)
+         ↓                /       \          ↓
+   [ SQL Server ]        /         \    [ MongoDB ]
+                        v           v
+           [ UsersAPI / CatalogAPI / PaymentsAPI ]
+                               |
+                               | (Fila: notifications-v3)
+                               ↓
+                        [NotificationsAPI]
+                     (Azure Function / Azurite)
 
-                    +----------------+
-                    |   RabbitMQ     |
-                    +----------------+
-                            |
-                            ↓
-
-              +-------------------------+
-              | NotificationsAPI        |
-              +-------------------------+
-
-
-                    +----------------+
-                    |  CatalogAPI    |
-                    +----------------+
-                            |
-                            | OrderPlacedEvent
-                            ↓
-
-                    +----------------+
-                    |   RabbitMQ     |
-                    +----------------+
-                            |
-                            ↓
-
-                    +----------------+
-                    | PaymentsAPI    |
-                    +----------------+
-                            |
-                            | PaymentProcessedEvent
-                            ↓
-
-              +-------------------------+
-              | CatalogAPI              |
-              | NotificationsAPI        |
-              +-------------------------+
+------------------------------------------------------------------
+[ Camada Transversal de Observabilidade: Prometheus & Grafana ]
+------------------------------------------------------------------
 ```
-
-## Tecnologias utilizadas
-
-- Docker
-- Docker Compose
-- Kubernetes
-- RabbitMQ
-- SQL Server
-- .NET 8
-- MassTransit
-
-## Estrutura do projeto
-
-```
-FCG.Orchestration
-│
-├── docker-compose.yml
-├── infra.yaml
-├── FCG.sln
-└── README.md
-```
+                                            
 
 ## Docker Compose
 
@@ -180,43 +159,9 @@ Exemplos:
 - Chaves JWT.
 - Senhas.
 
-## Comunicação entre serviços
-
-Os microsserviços não possuem comunicação direta entre si.
-
-A integração acontece através de eventos utilizando RabbitMQ e MassTransit.
-
-Fluxo de usuário:
-
-```text
-UsersAPI
-    |
-    | UserCreatedEvent
-    ↓
-RabbitMQ
-    ↓
-NotificationsAPI
-```
-
-Fluxo de compra:
-
-```text
-CatalogAPI
-    |
-    | OrderPlacedEvent
-    ↓
-RabbitMQ
-    ↓
-PaymentsAPI
-    |
-    | PaymentProcessedEvent
-    ↓
-CatalogAPI + NotificationsAPI
-```
-
 ## Banco de dados
 
-O ambiente Kubernetes utiliza SQL Server com persistência através de:
+O ambiente Kubernetes utiliza SQL Server, MongoDB e Redis com persistência através de:
 
 ```
 PersistentVolumeClaim
