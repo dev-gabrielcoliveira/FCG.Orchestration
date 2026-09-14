@@ -87,6 +87,8 @@ Serviços configurados:
 - CatalogAPI
 - PaymentsAPI
 - NotificationsAPI
+- MongoDB
+- SQL Server
 
 Executar:
 
@@ -109,15 +111,6 @@ Arquivo principal:
 ```
 infra.yaml
 ```
-
-Responsável por criar:
-
-- SQL Server
-- RabbitMQ
-- PersistentVolumeClaim
-- Deployments
-- Services
-
 ## Recursos Kubernetes utilizados
 
 ### Deployments
