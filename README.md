@@ -78,6 +78,10 @@ permite executar toda a infraestrutura localmente.
 
 Serviços configurados:
 
+- Kong API Gateway
+- Prometheus
+- Grafana
+- Redis
 - RabbitMQ
 - UsersAPI
 - CatalogAPI
