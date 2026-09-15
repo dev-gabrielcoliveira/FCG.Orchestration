@@ -60,6 +60,7 @@ services:
       ConnectionStrings__UsuariosConnection: "Server=sqlserver-service;Database=Db_Usuarios;User Id=sa;Password=NovaSenha123!;TrustServerCertificate=True;"
       ConnectionStrings__Redis: "redis-service:6379"
       ConnectionStrings__MongoDb: "mongodb://root:Password123!@mongodb-service:27017"
+      Jwt__Key: "SuperSecretKeyWithAtLeast32CharactersForJWTValidation!"
     depends_on:
       - rabbitmq-service
       - sqlserver-service
@@ -141,7 +142,7 @@ services:
       - "8000:8000"
       - "8001:8001"
     volumes:
-      - ./k8s/kong/kong.yml:/kong/declarative/kong.yml:ro
+      - ./k8s/kong/01-kong.yaml:/kong/declarative/kong.yml:ro
 
   # --- OBSERVABILIDADE (PROMETHEUS & GRAFANA) ---
   prometheus:
@@ -150,7 +151,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./k8s/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./k8s/monitoring/prometheus/01-prometheus.yaml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
 
   grafana:
