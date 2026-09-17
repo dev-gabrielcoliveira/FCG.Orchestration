@@ -11,22 +11,33 @@ data:
       - name: users-service
         url: http://users-service:80
         routes:
-          - name: protected-routes
-            paths:
-              - /api/usuario
-              - /api/Usuario
-              - /api/jogos
-              - /api/Jogos
-            strip_path: false
-            plugins:
-              - name: jwt
-
-          - name: public-routes
+          # Rotas públicas (sem autenticação)
+          - name: public-user-routes
             paths:
               - /auth
               - /Auth
               - /swagger
             strip_path: false
+
+          # Rotas protegidas (exigem JWT)
+          - name: protected-user-routes
+            paths:
+              - /api/usuario
+              - /api/Usuario
+            strip_path: false
+            plugins:
+              - name: jwt
+
+      - name: catalog-service
+        url: http://catalog-service:80
+        routes:
+          - name: catalog-routes
+            paths:
+              - /api/jogos
+              - /api/Jogos
+            strip_path: false
+            plugins:
+              - name: jwt
 
     plugins:
       - name: rate-limiting

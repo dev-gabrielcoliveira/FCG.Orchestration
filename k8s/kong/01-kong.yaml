@@ -17,7 +17,7 @@ services:
       - name: catalog-route
         paths:
           - /catalog
-        strip_path: false
+        strip_path: true
 
   - name: users-service
     url: http://users-api:8080
